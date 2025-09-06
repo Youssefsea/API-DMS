@@ -1,0 +1,24 @@
+# Backend Node.js
+/backend/node_modules/
+backend/.env
+backend/npm-debug.log
+backend/yarn-error.log
+backend/package-lock.json
+backend/yarn.lock
+
+# Frontend (React / Vue / HTML/CSS/JS)
+ /frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/.env
+frontend/npm-debug.log
+frontend/yarn-error.log
+frontend/package-lock.json
+frontend/yarn.lock
+
+# OS / IDE / Misc
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

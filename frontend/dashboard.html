@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ✅ Header -->
+  <header class="dashboard-header">
+    <h1>📂 Documents Dashboard</h1>
+    <button id="add-doc-btn">➕ Add Document</button>
+  </header>
+
+  <!-- ✅ Documents Grid -->
+  <main>
+    <div id="documents-container" class="docs-grid"></div>
+  </main>
+
+  <!-- ✅ Popup Modal for Adding/Editing Document -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <span id="close-modal" class="close">&times;</span>
+      <h2 id="modal-title">Add New Document</h2>
+      <input type="text" id="doc-title" placeholder="Title">
+      <input type="text" id="doc-project" placeholder="Project">
+      <textarea id="doc-summary" placeholder="Summary"></textarea>
+     <input type="file" id="doc-file" />
+      <button id="save-doc-btn">Save</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "http://localhost:5001";
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("You must login first!");
+      window.location.href = "index.html";
+    }
+
+    const container = document.getElementById("documents-container");
+    let editingTitle = null; // to track if we are editing
+
+    // ✅ Load Documents
+    async function loadDocuments() {
+      try {
+        const res = await fetch(`${API_URL}/documents`, {
+          method: "GET",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        container.innerHTML = "";
+
+        if (!Array.isArray(data) || data.length === 0) {
+          container.innerHTML = "<p>No documents found.</p>";
+          return;
+        }
+
+        data.forEach(doc => {
+          const card = document.createElement("div");
+          card.className = "doc-card";
+
+          card.innerHTML = `
+            <h2>${doc.title}</h2>
+            <p><strong>📌 Project:</strong> ${doc.project}</p>
+            <p><strong>📝 Summary:</strong> ${doc.summary || "No summary"}</p>
+            <p><a href="${doc.fileUrl}" target="_blank">📄 Open File</a></p>
+
+            <h3>Versions:</h3>
+            <ul>
+              ${doc.versions.map(v => `<li>v${v.versionNumber} - <a href="${v.fileUrl}" target="_blank">Open</a></li>`).join("")}
+            </ul>
+            <button onclick="addVersion('${doc.title}')">➕ Add Version</button>
+
+            <h3>Comments:</h3>
+            <ul>
+              ${doc.comments.map(c => `<li><b>${c.username}</b>: ${c.text}</li>`).join("")}
+            </ul>
+            <input type="text" id="comment-${doc.title}" placeholder="Write a comment...">
+            <button onclick="addComment('${doc.title}')">💬 Add Comment</button>
+
+
+            <div class="actions">
+              <button onclick="editDocument('${doc.title}', '${doc.project}', '${doc.summary}', '${doc.fileUrl}')">✏️ Edit</button>
+              <button onclick="deleteDocument('${doc.title}')">🗑️ Delete</button>
+            </div>
+          `;
+
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Error loading documents:", err);
+        container.innerHTML = "<p style='color:red;'>❌ Failed to load documents</p>";
+      }
+    }
+
+    // ✅ Add / Update Document
+  async function saveDocument() {
+  const title = document.getElementById("doc-title").value;
+  const project = document.getElementById("doc-project").value;
+  const summary = document.getElementById("doc-summary").value;
+  const fileInput = document.getElementById("doc-file");
+
+  if (!fileInput.files[0]) return alert('Please choose a file');
+
+  const fd = new FormData();
+  fd.append('file', fileInput.files[0]);     // field name 'file' لازم يطابق upload.single('file')
+  fd.append('title', title);
+  fd.append('project', project);
+  fd.append('summary', summary);
+
+  const res = await fetch(`${API_URL}/documents`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}` // **مهم**: لا تضف Content-Type هنا — المتصفح يضبطه تلقائياً
+    },
+    body: fd
+  });
+
+  const data = await res.json();
+  // تعامل مع النتيجة
+}
+
+
+    // ✅ Delete Document
+    async function deleteDocument(title) {
+      if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+      try {
+        await fetch(`${API_URL}/documents/${title}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        alert("🗑️ Document deleted");
+        loadDocuments();
+      } catch (err) {
+        alert("❌ Error deleting document: " + err.message);
+      }
+    }
+
+    // ✅ Add Version
+    async function addVersion(title) {
+      const newFileUrl = prompt("Enter new file URL:");
+      if (!newFileUrl) return;
+
+      try {
+        await fetch(`${API_URL}/documents/${title}/version`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ fileUrl: newFileUrl })
+        });
+        alert("📑 Version added!");
+        loadDocuments();
+      } catch (err) {
+        alert("❌ Error adding version: " + err.message);
+      }
+    }
+
+    // ✅ Add Comment
+    async function addComment(title) {
+      const commentInput = document.getElementById(`comment-${title}`);
+      const text = commentInput.value;
+      if (!text) return;
+
+      try {
+        await fetch(`${API_URL}/documents/${title}/comment`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ text })
+        });
+        commentInput.value = "";
+        loadDocuments();
+      } catch (err) {
+        alert("❌ Error adding comment: " + err.message);
+      }
+    }
+
+    // ✅ Edit Document (prefill modal)
+    function editDocument(title, project, summary, fileUrl) {
+      editingTitle = title;
+      document.getElementById("modal-title").textContent = "Edit Document";
+      document.getElementById("doc-title").value = title;
+      document.getElementById("doc-project").value = project;
+      document.getElementById("doc-summary").value = summary;
+      document.getElementById("doc-file").value = fileUrl;
+      modal.classList.remove("hidden");
+    }
+
+    // ✅ Modal Control
+    const modal = document.getElementById("modal");
+    const addBtn = document.getElementById("add-doc-btn");
+    const closeBtn = document.getElementById("close-modal");
+    const saveBtn = document.getElementById("save-doc-btn");
+
+    addBtn.onclick = () => {
+      editingTitle = null;
+      document.getElementById("modal-title").textContent = "Add New Document";
+      modal.classList.remove("hidden");
+    };
+
+    closeBtn.onclick = () => closeModal();
+    saveBtn.onclick = () => saveDocument();
+
+    function closeModal() {
+      modal.classList.add("hidden");
+      document.getElementById("doc-title").value = "";
+      document.getElementById("doc-project").value = "";
+      document.getElementById("doc-summary").value = "";
+      document.getElementById("doc-file").value = "";
+    }
+
+    // ✅ Load docs on start
+    loadDocuments();
+  </script>
+</body>
+</html>

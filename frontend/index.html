@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login / Register</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+
+    <!-- ✅ Login Form -->
+    <div id="login-form" class="form-box">
+      <h2>Login</h2>
+      <input type="email" id="login-email" placeholder="Email">
+      <input type="password" id="login-password" placeholder="Password">
+      <button onclick="login()">Login</button>
+      <p>
+        Don't have an account? 
+        <button class="link-btn" onclick="showRegister()">Register</button>
+      </p>
+    </div>
+
+    <!-- ✅ Register Form -->
+    <div id="register-form" class="form-box hidden">
+      <h2>Register</h2>
+      <input type="text" id="register-name" placeholder="Name">
+      <input type="email" id="register-email" placeholder="Email">
+      <input type="password" id="register-password" placeholder="Password">
+      <button onclick="register()">Register</button>
+      <p>
+        Already have an account? 
+        <button class="link-btn" onclick="showLogin()">Login</button>
+      </p>
+    </div>
+
+    <pre id="response"></pre>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
