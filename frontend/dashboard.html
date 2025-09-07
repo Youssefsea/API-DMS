@@ -97,7 +97,8 @@
     }
 
     // ✅ Add / Update Document
-  async function saveDocument() {
+// ✅ Add / Update Document
+async function saveDocument() {
   const title = document.getElementById("doc-title").value;
   const project = document.getElementById("doc-project").value;
   const summary = document.getElementById("doc-summary").value;
@@ -106,23 +107,36 @@
   if (!fileInput.files[0]) return alert('Please choose a file');
 
   const fd = new FormData();
-  fd.append('file', fileInput.files[0]);     // field name 'file' لازم يطابق upload.single('file')
+  fd.append('file', fileInput.files[0]); // لازم يطابق upload.single('file')
   fd.append('title', title);
   fd.append('project', project);
   fd.append('summary', summary);
 
-  const res = await fetch(`${API_URL}/documents`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}` // **مهم**: لا تضف Content-Type هنا — المتصفح يضبطه تلقائياً
-    },
-    body: fd
-  });
+  try {
+    const res = await fetch(`${API_URL}/documents`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}` // مهم
+      },
+      body: fd
+    });
 
-  const data = await res.json();
-  // تعامل مع النتيجة
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("✅ Document saved successfully!");
+      closeModal();         // يقفل الـ popup
+      loadDocuments();      // يعيد تحميل البيانات
+      // أو تعمل refresh كامل للصفحة:
+      // location.reload();
+    } else {
+      alert("❌ Error: " + (data.message || "Something went wrong"));
+    }
+  } catch (err) {
+    console.error("Error saving document:", err);
+    alert("❌ Failed to save document");
+  }
 }
-
 
     // ✅ Delete Document
     async function deleteDocument(title) {
